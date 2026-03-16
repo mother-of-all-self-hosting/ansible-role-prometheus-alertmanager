@@ -1,5 +1,6 @@
 {#
 SPDX-FileCopyrightText: 2023 Julian-Samuel Gebühr
+SPDX-FileCopyrightText: 2026 Suguru Hirahara
 
 SPDX-License-Identifier: AGPL-3.0-or-later
 #}
@@ -32,8 +33,9 @@ traefik.http.routers.{{ prometheus_alertmanager_identifier }}.tls={{ prometheus_
 traefik.http.routers.{{ prometheus_alertmanager_identifier }}.tls.certResolver={{ prometheus_alertmanager_container_labels_traefik_tls_certResolver }}
 {% endif %}
 traefik.http.routers.{{ prometheus_alertmanager_identifier }}.entrypoints={{ prometheus_alertmanager_container_labels_traefik_entrypoints }}
-{% endif %}
+
 traefik.http.services.{{ prometheus_alertmanager_identifier }}.loadbalancer.server.port={{ prometheus_alertmanager_container_http_port }}
+{% endif %}
 
 {% for arg in prometheus_alertmanager_container_labels_additional_labels %}
 {{ arg }}
