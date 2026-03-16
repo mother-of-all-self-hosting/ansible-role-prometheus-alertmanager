@@ -163,7 +163,7 @@ prometheus_alertmanager_hsts_preload_enabled: false
 # Example: ['--SOME_ARGUMENT']
 prometheus_alertmanager_process_extra_arguments: "{{ prometheus_alertmanager_process_extra_arguments_default + prometheus_alertmanager_process_extra_arguments_auto + prometheus_alertmanager_process_extra_arguments_custom }}"
 prometheus_alertmanager_process_extra_arguments_default:
-  - "--config.file=/etc/alertmanager/alertmanager.yml"
+  - "--config.file=/etc/alertmanager/config.yml"
 prometheus_alertmanager_process_extra_arguments_auto: []
 prometheus_alertmanager_process_extra_arguments_custom: []
 
@@ -228,7 +228,7 @@ prometheus_alertmanager_basic_auth_apache_container_image_registry_prefix: docke
 #
 # For a more advanced customization, you can extend the default (see `prometheus_alertmanager_configuration_extension_yaml`)
 # or completely replace this variable with your own template.
-prometheus_alertmanager_configuration_yaml: "{{ lookup('template', 'templates/alertmanager.yml.j2') }}"
+prometheus_alertmanager_configuration_yaml: "{{ lookup('template', 'templates/config.yml.j2') }}"
 
 prometheus_alertmanager_configuration_extension_yaml: |
   # Your custom YAML configuration goes here.

@@ -30,10 +30,10 @@
     - labels
   register: prometheus_alertmanager_support_files_result
 
-- name: Ensure alertmanager.yml installed
+- name: Ensure Prometheus Alertmanager configuration file installed
   ansible.builtin.copy:
     content: "{{ prometheus_alertmanager_configuration | to_nice_yaml(indent=2, width=999999) }}"
-    dest: "{{ prometheus_alertmanager_config_path }}/alertmanager.yml"
+    dest: "{{ prometheus_alertmanager_config_path }}/config.yml"
     mode: "0644"
     owner: "{{ prometheus_alertmanager_uid }}"
     group: "{{ prometheus_alertmanager_gid }}"
