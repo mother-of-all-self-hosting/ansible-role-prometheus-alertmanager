@@ -84,7 +84,7 @@
 
 - name: Ensure Prometheus Alertmanager systemd service is present
   ansible.builtin.template:
-    src: "{{ role_path }}/templates/systemd/alertmanager.service.j2"
+    src: "{{ role_path }}/templates/systemd/prometheus-alertmanager.service.j2"
     dest: "{{ devture_systemd_docker_base_systemd_path }}/{{ prometheus_alertmanager_identifier }}.service"
     mode: "0644"
   register: prometheus_alertmanager_systemd_service_result
