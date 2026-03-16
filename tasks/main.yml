@@ -8,9 +8,9 @@
   when: prometheus_alertmanager_enabled | bool
   tags:
     - setup-all
-    - setup-alertmanager
+    - setup-prometheus-alertmanager
     - install-all
-    - install-alertmanager
+    - install-prometheus-alertmanager
   block:
     - name: Validate Alertmanager configuration
       ansible.builtin.include_tasks: "{{ role_path }}/tasks/validate_config.yml"
@@ -23,7 +23,7 @@
   when: not prometheus_alertmanager_enabled | bool
   tags:
     - setup-all
-    - setup-alertmanager
+    - setup-prometheus-alertmanager
   block:
     - name: Uninstall Alertmanager
       ansible.builtin.include_tasks: "{{ role_path }}/tasks/uninstall.yml"

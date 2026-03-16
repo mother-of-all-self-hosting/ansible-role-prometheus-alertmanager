@@ -13,7 +13,7 @@
 
 prometheus_alertmanager_enabled: true
 
-prometheus_alertmanager_identifier: alertmanager
+prometheus_alertmanager_identifier: prometheus-alertmanager
 prometheus_alertmanager_base_path: "/{{ prometheus_alertmanager_identifier }}"
 prometheus_alertmanager_config_path: "{{ prometheus_alertmanager_base_path }}/config"
 prometheus_alertmanager_templates_path: "{{ prometheus_alertmanager_base_path }}/templates"
