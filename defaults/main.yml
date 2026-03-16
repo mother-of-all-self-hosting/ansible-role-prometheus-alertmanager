@@ -29,8 +29,8 @@ prometheus_alertmanager_gid: ""
 prometheus_alertmanager_hostname: ""
 
 # The path at which Prometheus Alertmanager is served.
-# This value must either be `/` or not end with a slash (e.g. `/alertmanager`).
-prometheus_alertmanager_path_prefix: /
+# This value must either be `/` or not end with a slash (e.g. `/prometheus-alertmanager`).
+prometheus_alertmanager_path_prefix: /metrics/alertmanager
 
 prometheus_alertmanager_container_image: "{{ prometheus_alertmanager_container_image_registry_prefix }}prom/alertmanager:{{ prometheus_alertmanager_container_image_tag }}"
 prometheus_alertmanager_container_image_tag: "{{ prometheus_alertmanager_version }}"
@@ -64,10 +64,10 @@ prometheus_alertmanager_container_additional_networks_custom: []
 # See `../templates/labels.j2` for details.
 #
 # To inject your own other container labels, see `prometheus_alertmanager_container_labels_additional_labels_custom`.
-prometheus_alertmanager_container_labels_traefik_enabled: false
+prometheus_alertmanager_container_labels_traefik_enabled: "{{ true if prometheus_alertmanager_hostname else false }}"
 prometheus_alertmanager_container_labels_traefik_docker_network: "{{ prometheus_alertmanager_container_network }}"
 prometheus_alertmanager_container_labels_traefik_hostname: "{{ prometheus_alertmanager_hostname }}"
-# The path prefix must either be `/` or not end with a slash (e.g. `/alertmanager`).
+# The path prefix must either be `/` or not end with a slash (e.g. `/metrics`).
 prometheus_alertmanager_container_labels_traefik_path_prefix: "{{ prometheus_alertmanager_path_prefix }}"
 prometheus_alertmanager_container_labels_traefik_rule: "Host(`{{ prometheus_alertmanager_container_labels_traefik_hostname }}`){% if prometheus_alertmanager_container_labels_traefik_path_prefix != '/' %} && PathPrefix(`{{ prometheus_alertmanager_container_labels_traefik_path_prefix }}`){% endif %}"
 prometheus_alertmanager_container_labels_traefik_priority: 0
