@@ -4,37 +4,37 @@ SPDX-FileCopyrightText: 2023 Julian-Samuel Gebühr
 SPDX-License-Identifier: AGPL-3.0-or-later
 #}
 
-{% if alertmanager_container_labels_traefik_enabled %}
+{% if prometheus_alertmanager_container_labels_traefik_enabled %}
 traefik.enable=true
 
-{% if alertmanager_container_labels_traefik_docker_network %}
-traefik.docker.network={{ alertmanager_container_labels_traefik_docker_network }}
+{% if prometheus_alertmanager_container_labels_traefik_docker_network %}
+traefik.docker.network={{ prometheus_alertmanager_container_labels_traefik_docker_network }}
 {% endif %}
 
 {% set middlewares = [] %}
 
-{% if alertmanager_basic_auth_enabled %}
-traefik.http.middlewares.{{ alertmanager_identifier }}-auth.basicauth.users={{ alertmanager_container_label_basicauth_users }}
-{% set middlewares = middlewares + [alertmanager_identifier + '-auth@docker'] %}
+{% if prometheus_alertmanager_basic_auth_enabled %}
+traefik.http.middlewares.{{ prometheus_alertmanager_identifier }}-auth.basicauth.users={{ prometheus_alertmanager_container_label_basicauth_users }}
+{% set middlewares = middlewares + [prometheus_alertmanager_identifier + '-auth@docker'] %}
 {% endif %}
 
-traefik.http.middlewares.{{ alertmanager_identifier }}-strip-prefix.stripprefix.prefixes={{ alertmanager_path_prefix }}
-{% set middlewares = middlewares + [alertmanager_identifier + '-strip-prefix@docker'] %}
+traefik.http.middlewares.{{ prometheus_alertmanager_identifier }}-strip-prefix.stripprefix.prefixes={{ prometheus_alertmanager_path_prefix }}
+{% set middlewares = middlewares + [prometheus_alertmanager_identifier + '-strip-prefix@docker'] %}
 
-traefik.http.routers.{{ alertmanager_identifier }}.rule={{ alertmanager_container_labels_traefik_rule }}
+traefik.http.routers.{{ prometheus_alertmanager_identifier }}.rule={{ prometheus_alertmanager_container_labels_traefik_rule }}
 {% if middlewares | length > 0 %}
-traefik.http.routers.{{ alertmanager_identifier }}.middlewares={{ middlewares | join(',') }}
+traefik.http.routers.{{ prometheus_alertmanager_identifier }}.middlewares={{ middlewares | join(',') }}
 {% endif %}
-traefik.http.routers.{{ alertmanager_identifier }}.service={{ alertmanager_identifier }}
-traefik.http.routers.{{ alertmanager_identifier }}.priority={{ alertmanager_container_labels_traefik_priority }}
-traefik.http.routers.{{ alertmanager_identifier }}.tls={{ alertmanager_container_labels_traefik_tls | to_json }}
-{% if alertmanager_container_labels_traefik_tls %}
-traefik.http.routers.{{ alertmanager_identifier }}.tls.certResolver={{ alertmanager_container_labels_traefik_tls_certResolver }}
+traefik.http.routers.{{ prometheus_alertmanager_identifier }}.service={{ prometheus_alertmanager_identifier }}
+traefik.http.routers.{{ prometheus_alertmanager_identifier }}.priority={{ prometheus_alertmanager_container_labels_traefik_priority }}
+traefik.http.routers.{{ prometheus_alertmanager_identifier }}.tls={{ prometheus_alertmanager_container_labels_traefik_tls | to_json }}
+{% if prometheus_alertmanager_container_labels_traefik_tls %}
+traefik.http.routers.{{ prometheus_alertmanager_identifier }}.tls.certResolver={{ prometheus_alertmanager_container_labels_traefik_tls_certResolver }}
 {% endif %}
-traefik.http.routers.{{ alertmanager_identifier }}.entrypoints={{ alertmanager_container_labels_traefik_entrypoints }}
+traefik.http.routers.{{ prometheus_alertmanager_identifier }}.entrypoints={{ prometheus_alertmanager_container_labels_traefik_entrypoints }}
 {% endif %}
-traefik.http.services.{{ alertmanager_identifier }}.loadbalancer.server.port={{ alertmanager_container_http_port }}
+traefik.http.services.{{ prometheus_alertmanager_identifier }}.loadbalancer.server.port={{ prometheus_alertmanager_container_http_port }}
 
-{% for arg in alertmanager_container_labels_additional_labels %}
+{% for arg in prometheus_alertmanager_container_labels_additional_labels %}
 {{ arg }}
 {% endfor %}

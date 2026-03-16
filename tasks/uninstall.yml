@@ -6,44 +6,44 @@
 ---
 - name: Check existence of Alertmanager systemd service
   ansible.builtin.stat:
-    path: "{{ devture_systemd_docker_base_systemd_path }}/{{ alertmanager_identifier }}.service"
-  register: alertmanager_service_stat
+    path: "{{ devture_systemd_docker_base_systemd_path }}/{{ prometheus_alertmanager_identifier }}.service"
+  register: prometheus_alertmanager_service_stat
 
 - name: Uninstall Alertmanager systemd services and files
-  when: alertmanager_service_stat.stat.exists | bool
+  when: prometheus_alertmanager_service_stat.stat.exists | bool
   block:
     - name: Ensure Alertmanager systemd service is stopped
       ansible.builtin.service:
-        name: "{{ alertmanager_identifier }}"
+        name: "{{ prometheus_alertmanager_identifier }}"
         state: stopped
         enabled: false
         daemon_reload: true
 
     - name: Ensure Alertmanager systemd service does not exist
       ansible.builtin.file:
-        path: "{{ devture_systemd_docker_base_systemd_path }}/{{ alertmanager_identifier }}.service"
+        path: "{{ devture_systemd_docker_base_systemd_path }}/{{ prometheus_alertmanager_identifier }}.service"
         state: absent
 
     - name: Ensure Alertmanager container network does not exist
-      when: alertmanager_container_network_deletion_enabled
+      when: prometheus_alertmanager_container_network_deletion_enabled
       block:
         - name: Ensure Alertmanager container network does not exist via community.docker.docker_network
           when: devture_systemd_docker_base_container_network_creation_method == 'ansible-module'
           community.docker.docker_network:
-            name: "{{ alertmanager_container_network }}"
+            name: "{{ prometheus_alertmanager_container_network }}"
             state: absent
-          register: alertmanager_network_deletion_result
+          register: prometheus_alertmanager_network_deletion_result
 
         - name: Ensure Alertmanager container network does not exist via ansible.builtin.command
           when: devture_systemd_docker_base_container_network_creation_method == 'command'
           ansible.builtin.command:
             cmd: >-
               {{ devture_systemd_docker_base_host_command_docker }} network rm
-              {{ alertmanager_container_network }}
-          register: alertmanager_network_deletion_result
-          changed_when: alertmanager_container_network in alertmanager_network_deletion_result.stdout
+              {{ prometheus_alertmanager_container_network }}
+          register: prometheus_alertmanager_network_deletion_result
+          changed_when: prometheus_alertmanager_container_network in prometheus_alertmanager_network_deletion_result.stdout
 
     - name: Ensure Alertmanager path does not exist
       ansible.builtin.file:
-        path: "{{ alertmanager_base_path }}"
+        path: "{{ prometheus_alertmanager_base_path }}"
         state: absent

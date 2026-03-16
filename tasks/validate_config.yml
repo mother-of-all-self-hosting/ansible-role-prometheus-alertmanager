@@ -10,9 +10,9 @@
       Please change your configuration to rename the variable (`{{ item.old }}` -> `{{ item.new }}`).
   when: "lookup('ansible.builtin.varnames', ('^' + item.old + '$'), wantlist=True) | length > 0"
   with_items:
-    - { "old": "alertmanager_process_default_arguments", "new": "alertmanager_process_extra_arguments_default" }
-    - { "old": "alertmanager_process_arguments", "new": "alertmanager_process_extra_arguments" }
-    - { "old": "alertmanager_http_header_content_permission_policy", "new": "alertmanager_http_header_permissions_policy" }
+    - { "old": "prometheus_alertmanager_process_default_arguments", "new": "prometheus_alertmanager_process_extra_arguments_default" }
+    - { "old": "prometheus_alertmanager_process_arguments", "new": "prometheus_alertmanager_process_extra_arguments" }
+    - { "old": "prometheus_alertmanager_http_header_content_permission_policy", "new": "prometheus_alertmanager_http_header_permissions_policy" }
 
 - name: Fail if required Alertmanager settings not defined
   ansible.builtin.fail:
@@ -20,7 +20,7 @@
       You need to define a required configuration setting (`{{ item }}`).
   when: "lookup('vars', item, default='') | string | length == 0"
   with_items:
-    - alertmanager_identifier
-    - alertmanager_uid
-    - alertmanager_gid
-    - alertmanager_container_network
+    - prometheus_alertmanager_identifier
+    - prometheus_alertmanager_uid
+    - prometheus_alertmanager_gid
+    - prometheus_alertmanager_container_network

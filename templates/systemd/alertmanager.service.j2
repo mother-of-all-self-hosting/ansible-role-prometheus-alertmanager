@@ -8,12 +8,12 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 #}
 
 [Unit]
-Description=Alertmanager ({{ alertmanager_identifier }})
-{% for service in alertmanager_systemd_required_services_list %}
+Description=Alertmanager ({{ prometheus_alertmanager_identifier }})
+{% for service in prometheus_alertmanager_systemd_required_services_list %}
 Requires={{ service }}
 After={{ service }}
 {% endfor %}
-{% for service in alertmanager_systemd_wanted_services_list %}
+{% for service in prometheus_alertmanager_systemd_wanted_services_list %}
 Wants={{ service }}
 {% endfor %}
 DefaultDependencies=no
@@ -21,41 +21,41 @@ DefaultDependencies=no
 [Service]
 Type=simple
 Environment="HOME={{ devture_systemd_docker_base_systemd_unit_home_path }}"
-ExecStartPre={{ devture_systemd_docker_base_host_command_sh }} -c '{{ alertmanager_container_cleanup_command | trim | replace("\n", " ") }}'
+ExecStartPre={{ devture_systemd_docker_base_host_command_sh }} -c '{{ prometheus_alertmanager_container_cleanup_command | trim | replace("\n", " ") }}'
 
 ExecStartPre={{ devture_systemd_docker_base_host_command_docker }} create \
       --rm \
-      --name={{ alertmanager_identifier }} \
+      --name={{ prometheus_alertmanager_identifier }} \
       --log-driver=none \
-      --user={{ alertmanager_uid }}:{{ alertmanager_gid }} \
+      --user={{ prometheus_alertmanager_uid }}:{{ prometheus_alertmanager_gid }} \
       --cap-drop=ALL \
       --read-only \
-      --network={{ alertmanager_container_network }} \
-      {% if alertmanager_container_http_host_bind_port %}
-      -p {{ alertmanager_container_http_host_bind_port }}:{{ alertmanager_container_http_port }} \
+      --network={{ prometheus_alertmanager_container_network }} \
+      {% if prometheus_alertmanager_container_http_host_bind_port %}
+      -p {{ prometheus_alertmanager_container_http_host_bind_port }}:{{ prometheus_alertmanager_container_http_port }} \
       {% endif %}
-      --env-file={{ alertmanager_base_path }}/env \
-      --label-file={{ alertmanager_base_path }}/labels \
-      --mount type=bind,src={{ alertmanager_config_path }},dst=/etc/alertmanager \
-      --mount type=bind,src={{ alertmanager_data_path }},dst=/alertmanager \
-      {% for arg in alertmanager_container_extra_arguments %}
+      --env-file={{ prometheus_alertmanager_base_path }}/env \
+      --label-file={{ prometheus_alertmanager_base_path }}/labels \
+      --mount type=bind,src={{ prometheus_alertmanager_config_path }},dst=/etc/alertmanager \
+      --mount type=bind,src={{ prometheus_alertmanager_data_path }},dst=/alertmanager \
+      {% for arg in prometheus_alertmanager_container_extra_arguments %}
       {{ arg }} \
       {% endfor %}
-      {{ alertmanager_container_image }} \
-      {{ alertmanager_process_extra_arguments | join(' ') }}
+      {{ prometheus_alertmanager_container_image }} \
+      {{ prometheus_alertmanager_process_extra_arguments | join(' ') }}
 
-{% for network in alertmanager_container_additional_networks %}
-ExecStartPre={{ devture_systemd_docker_base_host_command_docker }} network connect {{ network }} {{ alertmanager_identifier }}
+{% for network in prometheus_alertmanager_container_additional_networks %}
+ExecStartPre={{ devture_systemd_docker_base_host_command_docker }} network connect {{ network }} {{ prometheus_alertmanager_identifier }}
 {% endfor %}
 
-ExecStart={{ devture_systemd_docker_base_host_command_docker }} start --attach {{ alertmanager_identifier }}
+ExecStart={{ devture_systemd_docker_base_host_command_docker }} start --attach {{ prometheus_alertmanager_identifier }}
 
-ExecStop=-{{ devture_systemd_docker_base_host_command_sh }} -c '{{ devture_systemd_docker_base_host_command_docker }} stop -t {{ devture_systemd_docker_base_container_stop_grace_time_seconds }} {{ alertmanager_identifier }} 2>/dev/null || true'
-ExecStop=-{{ devture_systemd_docker_base_host_command_sh }} -c '{{ devture_systemd_docker_base_host_command_docker }} rm {{ alertmanager_identifier }} 2>/dev/null || true'
+ExecStop=-{{ devture_systemd_docker_base_host_command_sh }} -c '{{ devture_systemd_docker_base_host_command_docker }} stop -t {{ devture_systemd_docker_base_container_stop_grace_time_seconds }} {{ prometheus_alertmanager_identifier }} 2>/dev/null || true'
+ExecStop=-{{ devture_systemd_docker_base_host_command_sh }} -c '{{ devture_systemd_docker_base_host_command_docker }} rm {{ prometheus_alertmanager_identifier }} 2>/dev/null || true'
 
 Restart=always
 RestartSec=30
-SyslogIdentifier={{ alertmanager_identifier }}
+SyslogIdentifier={{ prometheus_alertmanager_identifier }}
 
 [Install]
 WantedBy=multi-user.target

@@ -5,7 +5,7 @@
 
 ---
 - name: Perform Alertmanager installation tasks
-  when: alertmanager_enabled | bool
+  when: prometheus_alertmanager_enabled | bool
   tags:
     - setup-all
     - setup-alertmanager
@@ -20,7 +20,7 @@
       ansible.builtin.include_tasks: "{{ role_path }}/tasks/install.yml"
 
 - name: Perform Alertmanager uninstallation tasks
-  when: not alertmanager_enabled | bool
+  when: not prometheus_alertmanager_enabled | bool
   tags:
     - setup-all
     - setup-alertmanager
