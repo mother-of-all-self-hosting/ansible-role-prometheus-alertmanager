@@ -75,6 +75,10 @@ prometheus_alertmanager_container_labels_traefik_entrypoints: web-secure
 prometheus_alertmanager_container_labels_traefik_tls: "{{ prometheus_alertmanager_container_labels_traefik_entrypoints != 'web' }}"
 prometheus_alertmanager_container_labels_traefik_tls_certResolver: default  # noqa var-naming
 
+prometheus_alertmanager_container_labels_metrics_middleware_basic_auth_enabled: false
+# See: https://doc.traefik.io/traefik/reference/routing-configuration/http/middlewares/basicauth/
+prometheus_alertmanager_container_labels_metrics_middleware_basic_auth_users: ""
+
 # Controls which additional headers to attach to all HTTP requests.
 # To add your own custom request headers, use `prometheus_alertmanager_container_labels_traefik_additional_request_headers_custom`
 prometheus_alertmanager_container_labels_traefik_additional_request_headers: "{{ prometheus_alertmanager_container_labels_traefik_additional_request_headers_auto | combine(prometheus_alertmanager_container_labels_traefik_additional_request_headers_custom) }}"
@@ -209,19 +213,6 @@ prometheus_alertmanager_container_cleanup_command: |
   done;
   echo "Failed to remove stale container {{ prometheus_alertmanager_identifier }} after {{ prometheus_alertmanager_container_cleanup_timeout_seconds }} attempts" >&2;
   exit 1
-
-# prometheus_alertmanager_basic_auth_enabled controls whether HTTP Basic authentication is enabled.
-# Also see `prometheus_alertmanager_container_label_basicauth_users`.
-prometheus_alertmanager_basic_auth_enabled: false
-prometheus_alertmanager_basic_auth_username: ""
-prometheus_alertmanager_basic_auth_password: ""
-# prometheus_alertmanager_container_label_basicauth_users is populated at runtime based on
-# prometheus_alertmanager_basic_auth_username and prometheus_alertmanager_basic_auth_password
-prometheus_alertmanager_container_label_basicauth_users: ""
-prometheus_alertmanager_basic_auth_apache_container_image: "{{ prometheus_alertmanager_basic_auth_apache_container_image_registry_prefix }}httpd:{{ prometheus_alertmanager_basic_auth_apache_container_image_tag }}"
-prometheus_alertmanager_basic_auth_apache_container_image_tag: "2.4.56-alpine3.17"
-prometheus_alertmanager_basic_auth_apache_container_image_force_pull: "{{ prometheus_alertmanager_basic_auth_apache_container_image.endswith(':latest') }}"
-prometheus_alertmanager_basic_auth_apache_container_image_registry_prefix: docker.io/
 
 # Default Prometheus Alertmanager configuration template which covers the generic use case.
 # You can customize it by controlling the various variables inside it.

@@ -14,8 +14,8 @@ traefik.docker.network={{ prometheus_alertmanager_container_labels_traefik_docke
 
 {% set middlewares = [] %}
 
-{% if prometheus_alertmanager_basic_auth_enabled %}
-traefik.http.middlewares.{{ prometheus_alertmanager_identifier }}-auth.basicauth.users={{ prometheus_alertmanager_container_label_basicauth_users }}
+{% if prometheus_alertmanager_container_labels_metrics_middleware_basic_auth_enabled %}
+traefik.http.middlewares.{{ prometheus_alertmanager_identifier }}-auth.basicauth.users={{ prometheus_alertmanager_container_labels_metrics_middleware_basic_auth_users }}
 {% set middlewares = middlewares + [prometheus_alertmanager_identifier + '-auth@docker'] %}
 {% endif %}
 
