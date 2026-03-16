@@ -1,8 +1,8 @@
 ---
 galaxy_info:
-  author: Julian-Samuel Gebühr
+  author: mash
   company: mash
-  role_name: alertmanager
+  role_name: prometheus_alertmanager
   namespace: mash
   description: Prometheus Alertmanager
   platforms:
@@ -17,6 +17,6 @@ galaxy_info:
         - all
     - name: EL
       versions:
-        - "7"
+        - all
   license: AGPL-3.0-or-later
   min_ansible_version: "2.1"
