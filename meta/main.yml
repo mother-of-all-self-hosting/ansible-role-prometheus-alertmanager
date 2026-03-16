@@ -4,7 +4,7 @@ galaxy_info:
   company: mash
   role_name: alertmanager
   namespace: mash
-  description: Alertmanager
+  description: Prometheus Alertmanager
   platforms:
     - name: Debian
       versions:

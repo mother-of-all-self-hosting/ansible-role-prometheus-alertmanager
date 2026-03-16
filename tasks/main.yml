@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 ---
-- name: Perform Alertmanager installation tasks
+- name: Perform Prometheus Alertmanager installation tasks
   when: prometheus_alertmanager_enabled | bool
   tags:
     - setup-all
@@ -12,18 +12,18 @@
     - install-all
     - install-prometheus-alertmanager
   block:
-    - name: Validate Alertmanager configuration
+    - name: Validate Prometheus Alertmanager configuration
       ansible.builtin.include_tasks: "{{ role_path }}/tasks/validate_config.yml"
-    - name: Prepare HTTP Basic authentication for Alertmanager
+    - name: Prepare HTTP Basic authentication for Prometheus Alertmanager
       ansible.builtin.include_tasks: "{{ role_path }}/tasks/prepare_basic_auth.yml"
-    - name: Install Alertmanager
+    - name: Install Prometheus Alertmanager
       ansible.builtin.include_tasks: "{{ role_path }}/tasks/install.yml"
 
-- name: Perform Alertmanager uninstallation tasks
+- name: Perform Prometheus Alertmanager uninstallation tasks
   when: not prometheus_alertmanager_enabled | bool
   tags:
     - setup-all
     - setup-prometheus-alertmanager
   block:
-    - name: Uninstall Alertmanager
+    - name: Uninstall Prometheus Alertmanager
       ansible.builtin.include_tasks: "{{ role_path }}/tasks/uninstall.yml"

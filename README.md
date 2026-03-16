@@ -5,9 +5,9 @@ SPDX-FileCopyrightText: 2026 Suguru Hirahara
 SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 
-# Alertmanager Ansible role
+# Prometheus Alertmanager Ansible role
 
-This is an [Ansible](https://www.ansible.com/) role which installs [Alertmanager](https://prometheus.io/docs/alerting/latest/alertmanager/) to run as a [Docker](https://www.docker.com/) container wrapped in a systemd service.
+This is an [Ansible](https://www.ansible.com/) role which installs [Prometheus Alertmanager](https://prometheus.io/docs/alerting/latest/alertmanager/) to run as a [Docker](https://www.docker.com/) container wrapped in a systemd service.
 
 This role *implicitly* depends on:
 

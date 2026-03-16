@@ -8,7 +8,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 ---
-# Alertmanager handles alerts sent by client applications such as Prometheus
+# Prometheus Alertmanager handles alerts sent by client applications such as Prometheus
 # Project source code URL: https://github.com/prometheus/alertmanager
 
 prometheus_alertmanager_enabled: true
@@ -25,10 +25,10 @@ prometheus_alertmanager_version: v0.31.1
 prometheus_alertmanager_uid: ""
 prometheus_alertmanager_gid: ""
 
-# The hostname at which Alertmanager is served.
+# The hostname at which Prometheus Alertmanager is served.
 prometheus_alertmanager_hostname: ""
 
-# The path at which Alertmanager is served.
+# The path at which Prometheus Alertmanager is served.
 # This value must either be `/` or not end with a slash (e.g. `/alertmanager`).
 prometheus_alertmanager_path_prefix: /
 
@@ -159,7 +159,7 @@ prometheus_alertmanager_floc_optout_enabled: true
 # See: `prometheus_alertmanager_http_header_strict_transport_security`
 prometheus_alertmanager_hsts_preload_enabled: false
 
-# A list of extra arguments to pass to the Alertmanager process
+# A list of extra arguments to pass to the Prometheus Alertmanager process
 # Example: ['--SOME_ARGUMENT']
 prometheus_alertmanager_process_extra_arguments: "{{ prometheus_alertmanager_process_extra_arguments_default + prometheus_alertmanager_process_extra_arguments_auto + prometheus_alertmanager_process_extra_arguments_custom }}"
 prometheus_alertmanager_process_extra_arguments_default:
@@ -167,13 +167,13 @@ prometheus_alertmanager_process_extra_arguments_default:
 prometheus_alertmanager_process_extra_arguments_auto: []
 prometheus_alertmanager_process_extra_arguments_custom: []
 
-# List of systemd services that the Alertmanager systemd service depends on
+# List of systemd services that the Prometheus Alertmanager systemd service depends on
 prometheus_alertmanager_systemd_required_services_list: "{{ prometheus_alertmanager_systemd_required_services_list_default + prometheus_alertmanager_systemd_required_services_list_auto + prometheus_alertmanager_systemd_required_services_list_custom }}"
 prometheus_alertmanager_systemd_required_services_list_default: "{{ [devture_systemd_docker_base_docker_service_name] if devture_systemd_docker_base_docker_service_name else [] }}"
 prometheus_alertmanager_systemd_required_services_list_auto: []
 prometheus_alertmanager_systemd_required_services_list_custom: []
 
-# List of systemd services that the Alertmanager systemd service wants
+# List of systemd services that the Prometheus Alertmanager systemd service wants
 prometheus_alertmanager_systemd_wanted_services_list: "{{ prometheus_alertmanager_systemd_wanted_services_list_default + prometheus_alertmanager_systemd_wanted_services_list_auto + prometheus_alertmanager_systemd_wanted_services_list_custom }}"
 prometheus_alertmanager_systemd_wanted_services_list_default: []
 prometheus_alertmanager_systemd_wanted_services_list_auto: []
@@ -223,7 +223,7 @@ prometheus_alertmanager_basic_auth_apache_container_image_tag: "2.4.56-alpine3.1
 prometheus_alertmanager_basic_auth_apache_container_image_force_pull: "{{ prometheus_alertmanager_basic_auth_apache_container_image.endswith(':latest') }}"
 prometheus_alertmanager_basic_auth_apache_container_image_registry_prefix: docker.io/
 
-# Default Alertmanager configuration template which covers the generic use case.
+# Default Prometheus Alertmanager configuration template which covers the generic use case.
 # You can customize it by controlling the various variables inside it.
 #
 # For a more advanced customization, you can extend the default (see `prometheus_alertmanager_configuration_extension_yaml`)
@@ -257,7 +257,7 @@ prometheus_alertmanager_environment_variables_tz: UTC
 # Additional environment variables.
 prometheus_alertmanager_environment_variables_additional_variables: ""
 
-# prometheus_alertmanager_restart_necessary controls whether the Alertmanager systemd
+# prometheus_alertmanager_restart_necessary controls whether the Prometheus Alertmanager systemd
 # service will be restarted (when true) or merely started (when false) by the
 # systemd service manager role (when conditional restart is enabled).
 #

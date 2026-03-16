@@ -5,7 +5,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 ---
-- name: Ensure Alertmanager paths exist
+- name: Ensure Prometheus Alertmanager paths exist
   ansible.builtin.file:
     path: "{{ item }}"
     state: directory
@@ -18,7 +18,7 @@
     - "{{ prometheus_alertmanager_templates_path }}"
     - "{{ prometheus_alertmanager_data_path }}"
 
-- name: Ensure Alertmanager support files installed
+- name: Ensure Prometheus Alertmanager support files installed
   ansible.builtin.template:
     src: "{{ role_path }}/templates/{{ item }}.j2"
     dest: "{{ prometheus_alertmanager_base_path }}/{{ item }}"
@@ -39,7 +39,7 @@
     group: "{{ prometheus_alertmanager_gid }}"
   register: prometheus_alertmanager_config_file_result
 
-- name: Ensure Alertmanager container image is pulled via community.docker.docker_image
+- name: Ensure Prometheus Alertmanager container image is pulled via community.docker.docker_image
   when: devture_systemd_docker_base_container_image_pull_method == 'ansible-module'
   community.docker.docker_image:
     name: "{{ prometheus_alertmanager_container_image }}"
@@ -51,7 +51,7 @@
   delay: "{{ devture_playbook_help_container_retries_delay }}"
   until: prometheus_alertmanager_container_image_pull_result is not failed
 
-- name: Ensure Alertmanager container image is pulled via ansible.builtin.command
+- name: Ensure Prometheus Alertmanager container image is pulled via ansible.builtin.command
   when: devture_systemd_docker_base_container_image_pull_method == 'command'
   ansible.builtin.command:
     cmd: "{{ devture_systemd_docker_base_host_command_docker }} pull {{ prometheus_alertmanager_container_image }}"
@@ -61,7 +61,7 @@
   until: prometheus_alertmanager_container_image_pull_result is not failed
   changed_when: "'Downloaded newer image' in prometheus_alertmanager_container_image_pull_result.stdout"
 
-- name: Ensure Alertmanager container network is created via community.docker.docker_network
+- name: Ensure Prometheus Alertmanager container network is created via community.docker.docker_network
   when: devture_systemd_docker_base_container_network_creation_method == 'ansible-module'
   community.docker.docker_network:
     enable_ipv6: "{{ devture_systemd_docker_base_ipv6_enabled }}"
@@ -70,7 +70,7 @@
     driver_options: "{{ devture_systemd_docker_base_container_networks_driver_options }}"
   register: prometheus_alertmanager_network_creation_result
 
-- name: Ensure Alertmanager container network is created via ansible.builtin.command
+- name: Ensure Prometheus Alertmanager container network is created via ansible.builtin.command
   when: devture_systemd_docker_base_container_network_creation_method == 'command'
   ansible.builtin.command:
     cmd: >-
@@ -82,14 +82,14 @@
   changed_when: prometheus_alertmanager_network_creation_result.rc == 0
   failed_when: prometheus_alertmanager_network_creation_result.rc != 0 and 'already exists' not in prometheus_alertmanager_network_creation_result.stderr
 
-- name: Ensure Alertmanager systemd service is present
+- name: Ensure Prometheus Alertmanager systemd service is present
   ansible.builtin.template:
     src: "{{ role_path }}/templates/systemd/alertmanager.service.j2"
     dest: "{{ devture_systemd_docker_base_systemd_path }}/{{ prometheus_alertmanager_identifier }}.service"
     mode: "0644"
   register: prometheus_alertmanager_systemd_service_result
 
-- name: Determine whether Alertmanager needs a restart
+- name: Determine whether Prometheus Alertmanager needs a restart
   ansible.builtin.set_fact:
     prometheus_alertmanager_restart_necessary: >-
       {{

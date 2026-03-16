@@ -8,7 +8,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 #}
 
 [Unit]
-Description=Alertmanager ({{ prometheus_alertmanager_identifier }})
+Description=Prometheus Alertmanager ({{ prometheus_alertmanager_identifier }})
 {% for service in prometheus_alertmanager_systemd_required_services_list %}
 Requires={{ service }}
 After={{ service }}
