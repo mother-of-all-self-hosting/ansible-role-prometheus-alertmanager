@@ -59,44 +59,44 @@ prometheus_alertmanager_container_additional_networks: "{{ prometheus_alertmanag
 prometheus_alertmanager_container_additional_networks_auto: []
 prometheus_alertmanager_container_additional_networks_custom: []
 
-# prometheus_alertmanager_container_labels_traefik_enabled controls whether labels to assist a Traefik reverse-proxy will be attached to the container.
+# prometheus_alertmanager_container_labels_metrics_enabled controls whether labels to assist a Traefik reverse-proxy will be attached to the container.
 # See `../templates/labels.j2` for details.
 #
 # To inject your own other container labels, see `prometheus_alertmanager_container_labels_additional_labels_custom`.
-prometheus_alertmanager_container_labels_traefik_enabled: "{{ true if prometheus_alertmanager_hostname else false }}"
-prometheus_alertmanager_container_labels_traefik_docker_network: "{{ prometheus_alertmanager_container_network }}"
-prometheus_alertmanager_container_labels_traefik_hostname: "{{ prometheus_alertmanager_hostname }}"
+prometheus_alertmanager_container_labels_metrics_enabled: "{{ true if prometheus_alertmanager_hostname else false }}"
+prometheus_alertmanager_container_labels_metrics_docker_network: "{{ prometheus_alertmanager_container_network }}"
+prometheus_alertmanager_container_labels_metrics_hostname: "{{ prometheus_alertmanager_hostname }}"
 # The path prefix must either be `/` or not end with a slash (e.g. `/metrics`).
-prometheus_alertmanager_container_labels_traefik_path_prefix: "{{ prometheus_alertmanager_path_prefix }}"
-prometheus_alertmanager_container_labels_traefik_rule: "Host(`{{ prometheus_alertmanager_container_labels_traefik_hostname }}`){% if prometheus_alertmanager_container_labels_traefik_path_prefix != '/' %} && PathPrefix(`{{ prometheus_alertmanager_container_labels_traefik_path_prefix }}`){% endif %}"
-prometheus_alertmanager_container_labels_traefik_priority: 0
-prometheus_alertmanager_container_labels_traefik_entrypoints: web-secure
-prometheus_alertmanager_container_labels_traefik_tls: "{{ prometheus_alertmanager_container_labels_traefik_entrypoints != 'web' }}"
-prometheus_alertmanager_container_labels_traefik_tls_certResolver: default  # noqa var-naming
+prometheus_alertmanager_container_labels_metrics_path_prefix: "{{ prometheus_alertmanager_path_prefix }}"
+prometheus_alertmanager_container_labels_metrics_rule: "Host(`{{ prometheus_alertmanager_container_labels_metrics_hostname }}`){% if prometheus_alertmanager_container_labels_metrics_path_prefix != '/' %} && PathPrefix(`{{ prometheus_alertmanager_container_labels_metrics_path_prefix }}`){% endif %}"
+prometheus_alertmanager_container_labels_metrics_priority: 0
+prometheus_alertmanager_container_labels_metrics_entrypoints: web-secure
+prometheus_alertmanager_container_labels_metrics_tls: "{{ prometheus_alertmanager_container_labels_metrics_entrypoints != 'web' }}"
+prometheus_alertmanager_container_labels_metrics_tls_certResolver: default  # noqa var-naming
 
 prometheus_alertmanager_container_labels_metrics_middleware_basic_auth_enabled: false
 # See: https://doc.traefik.io/traefik/reference/routing-configuration/http/middlewares/basicauth/
 prometheus_alertmanager_container_labels_metrics_middleware_basic_auth_users: ""
 
 # Controls which additional headers to attach to all HTTP requests.
-# To add your own custom request headers, use `prometheus_alertmanager_container_labels_traefik_additional_request_headers_custom`
-prometheus_alertmanager_container_labels_traefik_additional_request_headers: "{{ prometheus_alertmanager_container_labels_traefik_additional_request_headers_auto | combine(prometheus_alertmanager_container_labels_traefik_additional_request_headers_custom) }}"
-prometheus_alertmanager_container_labels_traefik_additional_request_headers_auto: {}
-prometheus_alertmanager_container_labels_traefik_additional_request_headers_custom: {}
+# To add your own custom request headers, use `prometheus_alertmanager_container_labels_metrics_additional_request_headers_custom`
+prometheus_alertmanager_container_labels_metrics_additional_request_headers: "{{ prometheus_alertmanager_container_labels_metrics_additional_request_headers_auto | combine(prometheus_alertmanager_container_labels_metrics_additional_request_headers_custom) }}"
+prometheus_alertmanager_container_labels_metrics_additional_request_headers_auto: {}
+prometheus_alertmanager_container_labels_metrics_additional_request_headers_custom: {}
 
 # Controls which additional headers to attach to all HTTP responses.
-# To add your own custom response headers, use `prometheus_alertmanager_container_labels_traefik_additional_response_headers_custom`
-prometheus_alertmanager_container_labels_traefik_additional_response_headers: "{{ prometheus_alertmanager_container_labels_traefik_additional_response_headers_auto | combine(prometheus_alertmanager_container_labels_traefik_additional_response_headers_custom) }}"
-prometheus_alertmanager_container_labels_traefik_additional_response_headers_auto: |
+# To add your own custom response headers, use `prometheus_alertmanager_container_labels_metrics_additional_response_headers_custom`
+prometheus_alertmanager_container_labels_metrics_additional_response_headers: "{{ prometheus_alertmanager_container_labels_metrics_additional_response_headers_auto | combine(prometheus_alertmanager_container_labels_metrics_additional_response_headers_custom) }}"
+prometheus_alertmanager_container_labels_metrics_additional_response_headers_auto: |
   {{
     {}
     | combine ({'X-XSS-Protection': prometheus_alertmanager_http_header_xss_protection} if prometheus_alertmanager_http_header_xss_protection else {})
     | combine ({'X-Content-Type-Options': prometheus_alertmanager_http_header_content_type_options} if prometheus_alertmanager_http_header_content_type_options else {})
     | combine ({'Content-Security-Policy': prometheus_alertmanager_http_header_content_security_policy} if prometheus_alertmanager_http_header_content_security_policy else {})
     | combine ({'Permissions-Policy': prometheus_alertmanager_http_header_permissions_policy} if prometheus_alertmanager_http_header_permissions_policy else {})
-    | combine ({'Strict-Transport-Security': prometheus_alertmanager_http_header_strict_transport_security} if prometheus_alertmanager_http_header_strict_transport_security and prometheus_alertmanager_container_labels_traefik_tls else {})
+    | combine ({'Strict-Transport-Security': prometheus_alertmanager_http_header_strict_transport_security} if prometheus_alertmanager_http_header_strict_transport_security and prometheus_alertmanager_container_labels_metrics_tls else {})
   }}
-prometheus_alertmanager_container_labels_traefik_additional_response_headers_custom: {}
+prometheus_alertmanager_container_labels_metrics_additional_response_headers_custom: {}
 
 # prometheus_alertmanager_container_labels_additional_labels contains a multiline string with additional labels to add to the container label file.
 # See `../templates/labels.j2` for details.
