@@ -19,7 +19,7 @@ prometheus_alertmanager_data_path: "{{ prometheus_alertmanager_base_path }}/data
 prometheus_alertmanager_templates_path: "{{ prometheus_alertmanager_base_path }}/templates"
 
 # renovate: datasource=docker depName=prom/alertmanager versioning=semver
-prometheus_alertmanager_version: v0.31.1
+prometheus_alertmanager_version: v0.32.0
 
 prometheus_alertmanager_uid: ""
 prometheus_alertmanager_gid: ""
