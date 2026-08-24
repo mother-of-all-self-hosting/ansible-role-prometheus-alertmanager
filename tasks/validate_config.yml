@@ -34,6 +34,41 @@
     - prometheus_alertmanager_gid
     - prometheus_alertmanager_container_network
 
+# Alertmanager validates its configuration file at startup and exits when it
+# does not hold up, before it ever binds its web listener. With `Restart=always`
+# on the systemd unit, that turns into a container which restarts forever while
+# the Ansible run that produced it reported success. These two checks catch the
+# mistakes that the role's own defaults invite, at the point where the operator
+# can still see them.
+#
+# The final configuration is inspected, rather than
+# `prometheus_alertmanager_config_route` and
+# `prometheus_alertmanager_config_receivers`, so that a route or a receiver
+# introduced through `prometheus_alertmanager_configuration_extension_yaml` (or
+# by replacing `prometheus_alertmanager_configuration_yaml` wholesale) counts
+# just as much.
+- name: Fail if the Prometheus Alertmanager root route has no receiver
+  ansible.builtin.fail:
+    msg: >-
+      Alertmanager's root route must name a receiver ("root route must specify a default receiver"),
+      but the configuration this role would write does not have one.
+      Define `prometheus_alertmanager_config_route` (a mapping with at least a `receiver` key)
+      and `prometheus_alertmanager_config_receivers` (a list with a receiver of that name).
+  when: "prometheus_alertmanager_configuration.route.receiver | default('') | string | length == 0"
+
+- name: Fail if the Prometheus Alertmanager root route names an unknown receiver
+  ansible.builtin.fail:
+    msg: >-
+      Alertmanager's root route is routed to a receiver (`{{ prometheus_alertmanager_configuration.route.receiver }}`)
+      which is not among the configured receivers
+      ({{ prometheus_alertmanager_configuration.receivers | default([]) | selectattr('name', 'defined') | map(attribute='name') | list | join(', ') | default('none', true) }}).
+      Add it to `prometheus_alertmanager_config_receivers`.
+  when: >-
+    prometheus_alertmanager_configuration.route.receiver | default('') | string | length > 0
+    and prometheus_alertmanager_configuration.route.receiver not in (
+      prometheus_alertmanager_configuration.receivers | default([]) | selectattr('name', 'defined') | map(attribute='name') | list
+    )
+
 - name: Run if Traefik is enabled
   when: prometheus_alertmanager_container_labels_metrics_enabled | bool
   block:
