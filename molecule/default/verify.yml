@@ -1,0 +1,349 @@
+# SPDX-FileCopyrightText: 2026 Slavi Pantaleev
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+---
+- name: Verify Prometheus Alertmanager
+  hosts: all
+  become: true
+  gather_facts: false
+
+  vars:
+    prometheus_alertmanager_molecule_api_url: "http://127.0.0.1:{{ prometheus_alertmanager_molecule_http_bind_port }}/api/v2"
+
+    # The alerts that get pushed through Alertmanager below. Their names are
+    # deliberately unlike anything Alertmanager invents on its own, so that
+    # finding them back can only mean they were accepted and stored.
+    #
+    # Only the first one is silenced later on. The second one is the control:
+    # it shares the routing tree and the alert store with the first, so if it
+    # went quiet too, "suppressed" would be saying something about Alertmanager
+    # as a whole rather than about the silence that was created.
+    prometheus_alertmanager_molecule_alert_name: MoleculeSyntheticAlert
+    prometheus_alertmanager_molecule_control_alert_name: MoleculeControlAlert
+
+    # Where the role puts the configuration file it renders. The identifier
+    # comes from the role's own defaults; the rest is this role's layout
+    # (`prometheus_alertmanager_config_path` mounted at /etc/alertmanager), which
+    # this scenario is entitled to pin down.
+    prometheus_alertmanager_molecule_config_file_path: "/{{ prometheus_alertmanager_defaults.prometheus_alertmanager_identifier }}/config/config.yml"
+
+  tasks:
+    # Role defaults are not in scope here, but the version that Renovate bumps
+    # lives in them and is what the API is checked against below.
+    - name: Load the Prometheus Alertmanager role defaults
+      ansible.builtin.include_vars:
+        file: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/defaults/main.yml"
+        name: prometheus_alertmanager_defaults
+
+    - name: Wait for Prometheus Alertmanager service to become active (up to 180s)
+      ansible.builtin.systemd:
+        name: prometheus-alertmanager.service
+      register: prometheus_alertmanager_service
+      until: prometheus_alertmanager_service.status.ActiveState == 'active'
+      retries: 36
+      delay: 5
+
+    - name: Assert Prometheus Alertmanager service is active
+      ansible.builtin.assert:
+        that: prometheus_alertmanager_service.status.ActiveState == 'active'
+        fail_msg: "prometheus-alertmanager.service not active ({{ prometheus_alertmanager_service.status.ActiveState }})"
+        success_msg: "prometheus-alertmanager.service is active"
+
+    - name: Retrieve Prometheus Alertmanager service log for debugging
+      when: prometheus_alertmanager_debug_service_enabled | bool
+      ansible.builtin.command:
+        cmd: journalctl -xeu prometheus-alertmanager.service
+      changed_when: false
+
+    # Alertmanager binds its web listener only after it has parsed the
+    # configuration file, but it keeps serving `/-/healthy` regardless of what
+    # happens afterwards, so this only says that the process is alive.
+    - name: Wait for Prometheus Alertmanager to report itself healthy (up to 180s)
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:{{ prometheus_alertmanager_molecule_http_bind_port }}/-/healthy"
+        method: GET
+      register: prometheus_alertmanager_healthy
+      until: prometheus_alertmanager_healthy.status == 200
+      retries: 36
+      delay: 5
+
+    # Unlike `/-/healthy`, this one only answers once the cluster has settled,
+    # so it is the probe that says Alertmanager is prepared to do work.
+    - name: Wait for Prometheus Alertmanager to report itself ready (up to 180s)
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:{{ prometheus_alertmanager_molecule_http_bind_port }}/-/ready"
+        method: GET
+      register: prometheus_alertmanager_ready
+      until: prometheus_alertmanager_ready.status == 200
+      retries: 36
+      delay: 5
+
+    - name: Query the Prometheus Alertmanager status
+      ansible.builtin.uri:
+        url: "{{ prometheus_alertmanager_molecule_api_url }}/status"
+        method: GET
+        return_content: true
+      register: prometheus_alertmanager_status
+
+    # Alertmanager reports its version without a leading `v` (`0.34.0`), while
+    # the role's version variable carries one. Compared as a prefix, with any
+    # leading `v` normalized away on both sides, so that this keeps holding if
+    # either side ever changes its mind about the prefix or starts carrying a
+    # build suffix.
+    - name: Assert the running Prometheus Alertmanager is the version this role installs
+      ansible.builtin.assert:
+        that: >-
+          (prometheus_alertmanager_status.json.versionInfo.version | regex_replace('^v', '')).startswith(
+            prometheus_alertmanager_defaults.prometheus_alertmanager_version | regex_replace('^v', '')
+          )
+        fail_msg: >-
+          Alertmanager reports {{ prometheus_alertmanager_status.json.versionInfo.version }},
+          expected {{ prometheus_alertmanager_defaults.prometheus_alertmanager_version }}
+        success_msg: "Alertmanager reports {{ prometheus_alertmanager_status.json.versionInfo.version }}"
+
+    # The gossip listener is a separate subsystem from the web listener, and it
+    # only reaches 'ready' after it has finished settling.
+    - name: Assert the Prometheus Alertmanager cluster has settled
+      ansible.builtin.assert:
+        that:
+          - prometheus_alertmanager_status.json.cluster.status == 'ready'
+          - prometheus_alertmanager_status.json.cluster.peers | length == 1
+        fail_msg: "Unexpected Alertmanager cluster state: {{ prometheus_alertmanager_status.json.cluster }}"
+        success_msg: "The Alertmanager cluster is ready with {{ prometheus_alertmanager_status.json.cluster.peers | length }} peer(s)"
+
+    - name: Read the configuration file the role wrote
+      ansible.builtin.slurp:
+        src: "{{ prometheus_alertmanager_molecule_config_file_path }}"
+      register: prometheus_alertmanager_config_file
+
+    - name: Parse the configuration on disk and the one the process is running
+      ansible.builtin.set_fact:
+        prometheus_alertmanager_molecule_config_on_disk: "{{ prometheus_alertmanager_config_file.content | b64decode | from_yaml }}"
+        prometheus_alertmanager_molecule_config_running: "{{ prometheus_alertmanager_status.json.config.original | from_yaml }}"
+
+    # `/api/v2/status` does not hand the file back verbatim: it marshals the
+    # parsed configuration, so every option Alertmanager defaults is filled in
+    # and every secret is replaced with `<secret>`. What can be compared is
+    # every value that is only in there because the role templated it out of
+    # this scenario's variables - which is the point, since the image ships a
+    # configuration of its own at /etc/alertmanager/alertmanager.yml, and that
+    # is what a broken bind mount or a stale `--config.file` would quietly fall
+    # back to. None of these values appear in it.
+    - name: Assert the process is running the configuration file the role wrote
+      ansible.builtin.assert:
+        that:
+          - prometheus_alertmanager_molecule_config_running.global.resolve_timeout == prometheus_alertmanager_molecule_config_on_disk.global.resolve_timeout
+          - prometheus_alertmanager_molecule_config_running.route.receiver == prometheus_alertmanager_molecule_config_on_disk.route.receiver
+          - prometheus_alertmanager_molecule_config_running.route.group_by == prometheus_alertmanager_molecule_config_on_disk.route.group_by
+          - prometheus_alertmanager_molecule_config_running.route.group_wait == prometheus_alertmanager_molecule_config_on_disk.route.group_wait
+          - prometheus_alertmanager_molecule_config_running.route.group_interval == prometheus_alertmanager_molecule_config_on_disk.route.group_interval
+          - >-
+            (prometheus_alertmanager_molecule_config_running.receivers | map(attribute='name') | list)
+            == (prometheus_alertmanager_molecule_config_on_disk.receivers | map(attribute='name') | list)
+          - prometheus_alertmanager_molecule_config_running.templates == prometheus_alertmanager_molecule_config_on_disk.templates
+        fail_msg: |-
+          The process is not running the configuration at {{ prometheus_alertmanager_molecule_config_file_path }}.
+          On disk: {{ prometheus_alertmanager_molecule_config_on_disk }}
+          Running: {{ prometheus_alertmanager_molecule_config_running }}
+        success_msg: "The process is running the configuration at {{ prometheus_alertmanager_molecule_config_file_path }}"
+
+    # Durations in the Prometheus family are re-rendered in their largest whole
+    # unit, so the `24h` the role wrote comes back as `1d`. Asserting the pair
+    # is worth more than skipping the field: an equal value could be an echo of
+    # the request, while this one can only have been parsed into a duration and
+    # rendered back out - which is to say the running configuration really is a
+    # configuration Alertmanager understood, not a string it kept around. The
+    # durations compared above (`5m`, `1h`) sit below a unit boundary and so
+    # survive the round trip unchanged.
+    - name: Assert the durations the role wrote were understood, not echoed
+      ansible.builtin.assert:
+        that:
+          - prometheus_alertmanager_molecule_config_on_disk.route.repeat_interval == '24h'
+          - prometheus_alertmanager_molecule_config_running.route.repeat_interval == '1d'
+        fail_msg: >-
+          Expected the `24h` repeat_interval on disk to be canonicalized to `1d`, but the file says
+          {{ prometheus_alertmanager_molecule_config_on_disk.route.repeat_interval }} and the process says
+          {{ prometheus_alertmanager_molecule_config_running.route.repeat_interval }}
+        success_msg: "The `24h` repeat_interval the role wrote is a `1d` duration to the running process"
+
+    # Ties the configuration to this scenario rather than to some default: the
+    # receiver name below exists nowhere but in this scenario's variables.
+    - name: Assert the configuration this scenario asked for reached the process
+      ansible.builtin.assert:
+        that: prometheus_alertmanager_molecule_receiver_name in prometheus_alertmanager_status.json.config.original
+        fail_msg: >-
+          The running configuration does not mention {{ prometheus_alertmanager_molecule_receiver_name }}:
+          {{ prometheus_alertmanager_status.json.config.original }}
+        success_msg: "The running configuration is the one this scenario asked for"
+
+    - name: Query the Prometheus Alertmanager receivers
+      ansible.builtin.uri:
+        url: "{{ prometheus_alertmanager_molecule_api_url }}/receivers"
+        method: GET
+        return_content: true
+      register: prometheus_alertmanager_receivers
+
+    - name: Assert the configured receiver is registered
+      ansible.builtin.assert:
+        that: prometheus_alertmanager_molecule_receiver_name in (prometheus_alertmanager_receivers.json | map(attribute='name') | list)
+        fail_msg: "Unexpected receivers: {{ prometheus_alertmanager_receivers.json }}"
+        success_msg: "Alertmanager registered the {{ prometheus_alertmanager_molecule_receiver_name }} receiver"
+
+    # Accepting an alert, storing it and routing it is what Alertmanager exists
+    # to do, and it exercises the whole pipeline rather than just the fact that
+    # a container came up: the API, the alert store, and the routing tree that
+    # this role rendered into the configuration file.
+    #
+    # No timestamps are sent, so Alertmanager stamps the alerts itself and
+    # expires them after the `resolve_timeout` this scenario configured.
+    - name: Push synthetic alerts into Prometheus Alertmanager
+      ansible.builtin.uri:
+        url: "{{ prometheus_alertmanager_molecule_api_url }}/alerts"
+        method: POST
+        body_format: json
+        body:
+          - labels:
+              alertname: "{{ prometheus_alertmanager_molecule_alert_name }}"
+              severity: critical
+              instance: molecule
+            annotations:
+              summary: A synthetic alert pushed by the Molecule scenario
+          - labels:
+              alertname: "{{ prometheus_alertmanager_molecule_control_alert_name }}"
+              severity: critical
+              instance: molecule
+            annotations:
+              summary: A synthetic alert which the Molecule scenario never silences
+        status_code: [200]
+
+    # The alerts are written to the store asynchronously, so they may not be
+    # readable back on the first try.
+    - name: Read the synthetic alerts back from Prometheus Alertmanager (up to 60s)
+      ansible.builtin.uri:
+        url: "{{ prometheus_alertmanager_molecule_api_url }}/alerts"
+        method: GET
+        return_content: true
+      register: prometheus_alertmanager_alerts
+      until: >-
+        [prometheus_alertmanager_molecule_alert_name, prometheus_alertmanager_molecule_control_alert_name]
+        | difference(prometheus_alertmanager_alerts.json | map(attribute='labels.alertname') | list)
+        | length == 0
+      retries: 12
+      delay: 5
+
+    - name: Extract the synthetic alert
+      ansible.builtin.set_fact:
+        prometheus_alertmanager_molecule_alert: >-
+          {{
+            prometheus_alertmanager_alerts.json
+            | selectattr('labels.alertname', 'equalto', prometheus_alertmanager_molecule_alert_name)
+            | first
+          }}
+
+    - name: Assert the synthetic alert is active and routed to the configured receiver
+      ansible.builtin.assert:
+        that:
+          - prometheus_alertmanager_molecule_alert.status.state == 'active'
+          - prometheus_alertmanager_molecule_alert.labels.severity == 'critical'
+          - prometheus_alertmanager_molecule_alert.labels.instance == 'molecule'
+          - (prometheus_alertmanager_molecule_alert.receivers | map(attribute='name') | list) == [prometheus_alertmanager_molecule_receiver_name]
+        fail_msg: "The synthetic alert is not as expected: {{ prometheus_alertmanager_molecule_alert }}"
+        success_msg: "The synthetic alert is active and routed to {{ prometheus_alertmanager_molecule_receiver_name }}"
+
+    # `now(utc=True)` returns a naive datetime, whose `.timestamp()` would be
+    # read as local time; both ends are therefore derived the same way, from
+    # the local-time `now()`, and only formatted as UTC.
+    - name: Compute the time window for the silence
+      ansible.builtin.set_fact:
+        prometheus_alertmanager_molecule_silence_starts_at: "{{ '%Y-%m-%dT%H:%M:%SZ' | strftime(now().timestamp() | int, utc=True) }}"
+        prometheus_alertmanager_molecule_silence_ends_at: "{{ '%Y-%m-%dT%H:%M:%SZ' | strftime(now().timestamp() | int + 7200, utc=True) }}"
+
+    # Silencing is the other half of what Alertmanager does, and it is stored
+    # by a subsystem of its own. Asserting that the alert above flips to
+    # 'suppressed' proves the silence store and the alert store are talking to
+    # each other, rather than merely that a silence was accepted.
+    - name: Create a silence matching the synthetic alert
+      ansible.builtin.uri:
+        url: "{{ prometheus_alertmanager_molecule_api_url }}/silences"
+        method: POST
+        body_format: json
+        body:
+          matchers:
+            - name: alertname
+              value: "{{ prometheus_alertmanager_molecule_alert_name }}"
+              isRegex: false
+              isEqual: true
+          startsAt: "{{ prometheus_alertmanager_molecule_silence_starts_at }}"
+          endsAt: "{{ prometheus_alertmanager_molecule_silence_ends_at }}"
+          createdBy: molecule
+          comment: A synthetic silence created by the Molecule scenario
+        status_code: [200]
+        return_content: true
+      register: prometheus_alertmanager_silence_created
+
+    - name: Read the silence back from Prometheus Alertmanager (up to 60s)
+      ansible.builtin.uri:
+        url: "{{ prometheus_alertmanager_molecule_api_url }}/silences"
+        method: GET
+        return_content: true
+      register: prometheus_alertmanager_silences
+      until: prometheus_alertmanager_silence_created.json.silenceID in (prometheus_alertmanager_silences.json | map(attribute='id') | list)
+      retries: 12
+      delay: 5
+
+    - name: Assert the silence is active
+      ansible.builtin.assert:
+        that: >-
+          (prometheus_alertmanager_silences.json
+           | selectattr('id', 'equalto', prometheus_alertmanager_silence_created.json.silenceID)
+           | map(attribute='status.state') | list) == ['active']
+        fail_msg: "The silence is not active: {{ prometheus_alertmanager_silences.json }}"
+        success_msg: "The silence {{ prometheus_alertmanager_silence_created.json.silenceID }} is active"
+
+    - name: Wait for the synthetic alert to become suppressed (up to 60s)
+      ansible.builtin.uri:
+        url: "{{ prometheus_alertmanager_molecule_api_url }}/alerts"
+        method: GET
+        return_content: true
+      register: prometheus_alertmanager_alerts_suppressed
+      until: >-
+        (prometheus_alertmanager_alerts_suppressed.json
+         | selectattr('labels.alertname', 'equalto', prometheus_alertmanager_molecule_alert_name)
+         | map(attribute='status.state') | list) == ['suppressed']
+      retries: 12
+      delay: 5
+
+    - name: Assert the synthetic alert is suppressed by the silence
+      ansible.builtin.assert:
+        that: >-
+          prometheus_alertmanager_silence_created.json.silenceID in (
+            prometheus_alertmanager_alerts_suppressed.json
+            | selectattr('labels.alertname', 'equalto', prometheus_alertmanager_molecule_alert_name)
+            | map(attribute='status.silencedBy') | flatten | list
+          )
+        fail_msg: "The synthetic alert is not silenced by {{ prometheus_alertmanager_silence_created.json.silenceID }}"
+        success_msg: "The synthetic alert is suppressed by the silence"
+
+    # Read in the same response as the assertion above, so this is the state of
+    # the control alert at the moment the silenced one had already gone quiet.
+    - name: Assert the alert the silence does not match stayed active
+      ansible.builtin.assert:
+        that: >-
+          (prometheus_alertmanager_alerts_suppressed.json
+           | selectattr('labels.alertname', 'equalto', prometheus_alertmanager_molecule_control_alert_name)
+           | map(attribute='status.state') | list) == ['active']
+        fail_msg: >-
+          {{ prometheus_alertmanager_molecule_control_alert_name }} did not stay active, so "suppressed" above
+          says nothing about the silence: {{ prometheus_alertmanager_alerts_suppressed.json }}
+        success_msg: "{{ prometheus_alertmanager_molecule_control_alert_name }} stayed active, so the silence is what suppressed the other alert"
+
+    - name: Show Prometheus Alertmanager verification summary
+      ansible.builtin.debug:
+        msg:
+          - "Prometheus Alertmanager systemd: {{ prometheus_alertmanager_service.status.ActiveState }}"
+          - "Prometheus Alertmanager version: {{ prometheus_alertmanager_status.json.versionInfo.version }}"
+          - "Prometheus Alertmanager cluster: {{ prometheus_alertmanager_status.json.cluster.status }}"
+          - "Prometheus Alertmanager receivers: {{ prometheus_alertmanager_receivers.json | map(attribute='name') | list }}"
+          - "Prometheus Alertmanager alert: {{ prometheus_alertmanager_molecule_alert.labels }}"
+          - "Prometheus Alertmanager silence: {{ prometheus_alertmanager_silence_created.json.silenceID }}"

@@ -1,0 +1,81 @@
+# SPDX-FileCopyrightText: 2026 Slavi Pantaleev
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+---
+dependency:
+  name: galaxy
+  options:
+    requirements-file: requirements.yml
+    force: true
+driver:
+  name: docker
+platforms:
+  - name: prometheus-alertmanager-${MOLECULE_DISTRO:-ubuntu2604}-default
+    image: "geerlingguy/docker-${MOLECULE_DISTRO:-ubuntu2604}-ansible:latest"
+    command: ${MOLECULE_DOCKER_COMMAND:-""}
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    cgroupns_mode: host
+    privileged: true
+    pre_build_image: true
+provisioner:
+  name: ansible
+  config_options:
+    defaults:
+      callback_result_format: yaml
+  inventory:
+    group_vars:
+      all:
+        # Helper variables
+        prometheus_alertmanager_debug_service_enabled: false
+
+        # The port on the host that Prometheus Alertmanager is published on. The
+        # role does not publish it by default (Alertmanager is meant to be
+        # reached through a reverse-proxy), so the scenario asks for it below.
+        prometheus_alertmanager_molecule_http_bind_port: 9093
+
+        # The name of the receiver that the configuration below defines. The
+        # verification asserts that this name - which only exists because this
+        # scenario put it into the role's configuration - is what the running
+        # process reports back, both as a configured receiver and as the
+        # receiver an alert gets routed to.
+        prometheus_alertmanager_molecule_receiver_name: molecule-blackhole
+
+        # Variables for Prometheus Alertmanager
+        prometheus_alertmanager_uid: 1000
+        prometheus_alertmanager_gid: 1000
+        prometheus_alertmanager_hostname: localhost
+        prometheus_alertmanager_container_labels_metrics_enabled: false
+
+        prometheus_alertmanager_container_http_host_bind_port: "127.0.0.1:{{ prometheus_alertmanager_molecule_http_bind_port }}"
+
+        # The role's defaults configure no receivers and an empty root route,
+        # which Alertmanager refuses to load ("root route must specify a default
+        # receiver"), so a usable configuration has to be supplied here.
+        prometheus_alertmanager_config_global:
+          resolve_timeout: 5m
+
+        # A webhook receiver pointing at the reserved `.invalid` top-level
+        # domain, which cannot resolve. Together with the long `group_wait`
+        # below it guarantees that no notification is ever delivered anywhere:
+        # nothing is flushed during the lifetime of the test, and had it been,
+        # it would have had nowhere to go.
+        prometheus_alertmanager_config_receivers:
+          - name: "{{ prometheus_alertmanager_molecule_receiver_name }}"
+            webhook_configs:
+              - url: http://prometheus-alertmanager-molecule-receiver.invalid/webhook
+                send_resolved: false
+
+        prometheus_alertmanager_config_route:
+          receiver: "{{ prometheus_alertmanager_molecule_receiver_name }}"
+          group_by:
+            - alertname
+          group_wait: 1h
+          group_interval: 1h
+          repeat_interval: 24h
+  env:
+    # Workaround for https://github.com/ansible/molecule/issues/4391
+    ANSIBLE_ROLES_PATH: ${MOLECULE_PROJECT_DIRECTORY}/..:/.ansible/roles:/usr/share/ansible/roles:/etc/ansible/roles:~/.ansible/roles
+verifier:
+  name: ansible
