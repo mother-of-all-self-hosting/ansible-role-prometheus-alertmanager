@@ -233,11 +233,31 @@ prometheus_alertmanager_configuration_extension: "{{ prometheus_alertmanager_con
 # You most likely don't need to touch this variable. Instead, see `prometheus_alertmanager_configuration_yaml`.
 prometheus_alertmanager_configuration: "{{ prometheus_alertmanager_configuration_yaml | from_yaml | combine(prometheus_alertmanager_configuration_extension, recursive=True) }}"
 
-prometheus_alertmanager_config_global: []
+# Alertmanager's `global` section - a mapping of settings shared by all
+# receivers (`resolve_timeout`, `smtp_*`, `slack_api_url`, …).
+# See: https://prometheus.io/docs/alerting/latest/configuration/#configuration-file
+prometheus_alertmanager_config_global: {}
 
+# Alertmanager's `receivers` section - a list of named notification targets.
+# At least one is required, and its name must be the one that
+# `prometheus_alertmanager_config_route` routes to.
+#
+# Example:
+# prometheus_alertmanager_config_receivers:
+#   - name: default
+#     webhook_configs:
+#       - url: http://example.com/webhook
 prometheus_alertmanager_config_receivers: []
 
-prometheus_alertmanager_config_route: []
+# Alertmanager's `route` section - the root node of the routing tree, a mapping.
+# It must name a `receiver` which exists in
+# `prometheus_alertmanager_config_receivers`, or Alertmanager refuses to start.
+#
+# Example:
+# prometheus_alertmanager_config_route:
+#   receiver: default
+#   group_by: [alertname]
+prometheus_alertmanager_config_route: {}
 
 # Specify the timezone
 prometheus_alertmanager_environment_variables_tz: UTC
