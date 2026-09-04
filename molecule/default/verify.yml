@@ -339,7 +339,7 @@
           says nothing about the silence: {{ prometheus_alertmanager_alerts_suppressed.json }}
         success_msg: "{{ prometheus_alertmanager_molecule_control_alert_name }} stayed active, so the silence is what suppressed the other alert"
 
-    - name: Show Prometheus Alertmanager verification summary
+    - name: Show the Prometheus Alertmanager verification summary
       ansible.builtin.debug:
         msg:
           - "Prometheus Alertmanager systemd: {{ prometheus_alertmanager_service.status.ActiveState }}"
