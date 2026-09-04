@@ -98,10 +98,8 @@
           (prometheus_alertmanager_status.json.versionInfo.version | regex_replace('^v', '')).startswith(
             prometheus_alertmanager_defaults.prometheus_alertmanager_version | regex_replace('^v', '')
           )
-        fail_msg: >-
-          Alertmanager reports {{ prometheus_alertmanager_status.json.versionInfo.version }},
-          expected {{ prometheus_alertmanager_defaults.prometheus_alertmanager_version }}
-        success_msg: "Alertmanager reports {{ prometheus_alertmanager_status.json.versionInfo.version }}"
+        fail_msg: "Prometheus Alertmanager reports {{ prometheus_alertmanager_status.json.versionInfo.version | default('none') }}, expected {{ prometheus_alertmanager_defaults.prometheus_alertmanager_version }}"
+        success_msg: "Prometheus Alertmanager reports {{ prometheus_alertmanager_status.json.versionInfo.version }}"
 
     # The gossip listener is a separate subsystem from the web listener, and it
     # only reaches 'ready' after it has finished settling.
