@@ -87,11 +87,9 @@
         return_content: true
       register: prometheus_alertmanager_status
 
-    # Alertmanager reports its version without a leading `v` (`0.34.0`), while
-    # the role's version variable carries one. Compared as a prefix, with any
-    # leading `v` normalized away on both sides, so that this keeps holding if
-    # either side ever changes its mind about the prefix or starts carrying a
-    # build suffix.
+    # `prometheus_alertmanager_version` carries a leading `v` (`v3.14.0`) but the binary
+    # reports the bare version (`3.14.0`). The comparison is a prefix match, so
+    # that a build suffix appearing upstream does not fail the scenario.
     - name: Assert the running Prometheus Alertmanager is the version this role installs
       ansible.builtin.assert:
         that: >-
