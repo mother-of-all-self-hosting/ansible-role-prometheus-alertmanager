@@ -60,7 +60,7 @@
     - name: Retrieve the Prometheus Alertmanager systemd service log for debugging
       when: prometheus_alertmanager_debug_service_enabled | bool
       ansible.builtin.command:
-        cmd: journalctl -xeu prometheus-alertmanager.service
+        cmd: journalctl --no-pager --output=cat --unit=prometheus-alertmanager.service
       changed_when: false
 
     # Alertmanager binds its web listener only after it has parsed the
