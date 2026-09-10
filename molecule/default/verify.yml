@@ -29,6 +29,8 @@
     prometheus_alertmanager_molecule_config_file_path: "/{{ prometheus_alertmanager_defaults.prometheus_alertmanager_identifier }}/config/config.yml"
 
   tasks:
+    - name: Verify that Prometheus Alertmanager works
+      block:
     # The role is not included in this playbook, so its defaults are not in
     # scope. Reading defaults/main.yml directly ties the version assertion
     # below.
@@ -350,3 +352,19 @@
           - "Prometheus Alertmanager receivers: {{ prometheus_alertmanager_receivers.json | map(attribute='name') | list }}"
           - "Prometheus Alertmanager alert: {{ prometheus_alertmanager_molecule_alert.labels }}"
           - "Prometheus Alertmanager silence: {{ prometheus_alertmanager_silence_created.json.silenceID }}"
+
+      rescue:
+        # Whatever went wrong, the reason is almost always in the systemd service log.
+        - name: Retrieve the Prometheus Alertmanager systemd service log
+          ansible.builtin.command:
+            cmd: journalctl --no-pager --output=cat --unit=prometheus-alertmanager.service
+          register: prometheus_alertmanager_service_log
+          changed_when: false
+
+        - name: Show the Prometheus Alertmanager systemd service log
+          ansible.builtin.debug:
+            var: prometheus_alertmanager_service_log.stdout_lines
+
+        - name: Fail because verification did not pass
+          ansible.builtin.fail:
+            msg: "Prometheus Alertmanager verification failed. The systemd service log is printed above."
