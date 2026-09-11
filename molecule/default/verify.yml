@@ -28,6 +28,9 @@
     # this scenario is entitled to pin down.
     prometheus_alertmanager_molecule_config_file_path: "/{{ prometheus_alertmanager_defaults.prometheus_alertmanager_identifier }}/config/config.yml"
 
+    prometheus_alertmanager_verify_units:
+      - prometheus-alertmanager.service
+
   tasks:
     - name: Verify that Prometheus Alertmanager works
       block:
@@ -39,13 +42,14 @@
             file: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/defaults/main.yml"
             name: prometheus_alertmanager_defaults
 
-        - name: Wait for the Prometheus Alertmanager systemd service to become active (up to 180s)
+        - name: Wait for the Prometheus Alertmanager systemd services to become active (up to 180s each)
           ansible.builtin.systemd_service:
-            name: prometheus-alertmanager.service
-          register: prometheus_alertmanager_service
-          until: prometheus_alertmanager_service.status.ActiveState == 'active'
+            name: "{{ item }}"
+          register: prometheus_alertmanager_services
+          until: prometheus_alertmanager_services.status.ActiveState == 'active'
           retries: 36
           delay: 5
+          loop: "{{ prometheus_alertmanager_verify_units }}"
           # So that giving up is reported by the assertion below rather than as a
           # wall of systemd unit properties.
           failed_when: false
@@ -53,17 +57,20 @@
         # `Restart=always` in the systemd unit means that even a container which crashes
         # and gets restarted reads as active here, so this is a precondition rather than
         # a result.
-        - name: Assert the Prometheus Alertmanager systemd service is active
+        - name: Assert the Prometheus Alertmanager systemd services are active
           ansible.builtin.assert:
-            that: prometheus_alertmanager_service.status.ActiveState == 'active'
-            fail_msg: "prometheus-alertmanager.service is not active ({{ prometheus_alertmanager_service.status.ActiveState }})"
-            success_msg: "prometheus-alertmanager.service is active"
+            that: prometheus_alertmanager_services.results | map(attribute='status.ActiveState') | unique | list == ['active']
+            fail_msg: >-
+              Not every service is active:
+              {{ dict(prometheus_alertmanager_verify_units | zip(prometheus_alertmanager_services.results | map(attribute='status.ActiveState'))) }}
+            success_msg: "Every systemd service is active"
 
-        - name: Retrieve the Prometheus Alertmanager systemd service log for debugging
+        - name: Retrieve the Prometheus Alertmanager systemd services log for debugging
           when: prometheus_alertmanager_debug_service_enabled | bool
           ansible.builtin.command:
-            cmd: journalctl --no-pager --output=cat --unit=prometheus-alertmanager.service
+            cmd: "journalctl --no-pager --output=cat --unit={{ item }}"
           changed_when: false
+          loop: "{{ prometheus_alertmanager_verify_units }}"
 
         # Alertmanager binds its web listener only after it has parsed the
         # configuration file, but it keeps serving `/-/healthy` regardless of what
@@ -346,7 +353,7 @@
         - name: Show the Prometheus Alertmanager verification summary
           ansible.builtin.debug:
             msg:
-              - "Prometheus Alertmanager systemd: {{ prometheus_alertmanager_service.status.ActiveState }}"
+              - "Prometheus Alertmanager systemd: {% for unit, state in prometheus_alertmanager_verify_units | zip(prometheus_alertmanager_services.results | map(attribute='status.ActiveState')) %}{{ unit }} ({{ state }}){% if not loop.last %}, {% endif %}{% endfor %}"
               - "Prometheus Alertmanager version: {{ prometheus_alertmanager_status.json.versionInfo.version }}"
               - "Prometheus Alertmanager cluster: {{ prometheus_alertmanager_status.json.cluster.status }}"
               - "Prometheus Alertmanager receivers: {{ prometheus_alertmanager_receivers.json | map(attribute='name') | list }}"
