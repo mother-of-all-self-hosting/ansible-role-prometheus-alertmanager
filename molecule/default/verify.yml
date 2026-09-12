@@ -79,10 +79,13 @@
           ansible.builtin.uri:
             url: "http://127.0.0.1:{{ prometheus_alertmanager_molecule_http_bind_port }}/-/healthy"
             method: GET
-          register: prometheus_alertmanager_healthy
-          until: prometheus_alertmanager_healthy.status == 200
+          register: prometheus_alertmanager_health
+          until: prometheus_alertmanager_health.status == 200
           retries: 36
           delay: 5
+          # So that giving up is reported by the assertion below rather than as a
+          # wall of systemd unit properties.
+          failed_when: false
 
         # Unlike `/-/healthy`, this one only answers once the cluster has settled,
         # so it is the probe that says Alertmanager is prepared to do work.
