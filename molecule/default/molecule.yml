@@ -29,6 +29,7 @@ provisioner:
       all:
         # Helper variables
         prometheus_alertmanager_debug_service_enabled: false
+        prometheus_alertmanager_restarts_check_enabled: true
 
         # The port on the host that Prometheus Alertmanager is published on. The
         # role does not publish it by default (Alertmanager is meant to be
