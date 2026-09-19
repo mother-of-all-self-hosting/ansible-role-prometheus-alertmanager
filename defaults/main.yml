@@ -113,6 +113,14 @@ prometheus_alertmanager_container_extra_arguments: "{{ prometheus_alertmanager_c
 prometheus_alertmanager_container_extra_arguments_auto: []
 prometheus_alertmanager_container_extra_arguments_custom: []
 
+# A list of extra arguments to pass to the process inside the container
+# Example: ['--SOME_ARGUMENT']
+prometheus_alertmanager_process_extra_arguments: "{{ prometheus_alertmanager_process_extra_arguments_default + prometheus_alertmanager_process_extra_arguments_auto + prometheus_alertmanager_process_extra_arguments_custom }}"
+prometheus_alertmanager_process_extra_arguments_default:
+  - "--config.file=/etc/alertmanager/config.yml"
+prometheus_alertmanager_process_extra_arguments_auto: []
+prometheus_alertmanager_process_extra_arguments_custom: []
+
 # Specifies the value of the `X-XSS-Protection` header
 # Stops pages from loading when they detect reflected cross-site scripting (XSS) attacks.
 #
@@ -159,14 +167,6 @@ prometheus_alertmanager_floc_optout_enabled: true
 # - https://hstspreload.org/#opt-in
 # See: `prometheus_alertmanager_http_header_strict_transport_security`
 prometheus_alertmanager_hsts_preload_enabled: false
-
-# A list of extra arguments to pass to the Prometheus Alertmanager process
-# Example: ['--SOME_ARGUMENT']
-prometheus_alertmanager_process_extra_arguments: "{{ prometheus_alertmanager_process_extra_arguments_default + prometheus_alertmanager_process_extra_arguments_auto + prometheus_alertmanager_process_extra_arguments_custom }}"
-prometheus_alertmanager_process_extra_arguments_default:
-  - "--config.file=/etc/alertmanager/config.yml"
-prometheus_alertmanager_process_extra_arguments_auto: []
-prometheus_alertmanager_process_extra_arguments_custom: []
 
 # List of systemd services that the Prometheus Alertmanager systemd service depends on
 prometheus_alertmanager_systemd_required_services_list: "{{ prometheus_alertmanager_systemd_required_services_list_default + prometheus_alertmanager_systemd_required_services_list_auto + prometheus_alertmanager_systemd_required_services_list_custom }}"
