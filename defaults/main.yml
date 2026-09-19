@@ -113,6 +113,12 @@ prometheus_alertmanager_container_extra_arguments: "{{ prometheus_alertmanager_c
 prometheus_alertmanager_container_extra_arguments_auto: []
 prometheus_alertmanager_container_extra_arguments_custom: []
 
+# A list of extra arguments to pass to the process inside the container
+# Example: ['--SOME_ARGUMENT']
+prometheus_alertmanager_process_extra_arguments: "{{ prometheus_alertmanager_process_extra_arguments_auto + prometheus_alertmanager_process_extra_arguments_custom }}"
+prometheus_alertmanager_process_extra_arguments_auto: []
+prometheus_alertmanager_process_extra_arguments_custom: []
+
 # Specifies the value of the `X-XSS-Protection` header
 # Stops pages from loading when they detect reflected cross-site scripting (XSS) attacks.
 #
@@ -160,7 +166,7 @@ prometheus_alertmanager_floc_optout_enabled: true
 # See: `prometheus_alertmanager_http_header_strict_transport_security`
 prometheus_alertmanager_hsts_preload_enabled: false
 
-# A list of extra arguments to pass to the Prometheus Alertmanager process
+# A list of extra arguments to pass to the process inside the container
 # Example: ['--SOME_ARGUMENT']
 prometheus_alertmanager_process_extra_arguments: "{{ prometheus_alertmanager_process_extra_arguments_default + prometheus_alertmanager_process_extra_arguments_auto + prometheus_alertmanager_process_extra_arguments_custom }}"
 prometheus_alertmanager_process_extra_arguments_default:

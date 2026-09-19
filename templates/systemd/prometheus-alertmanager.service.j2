@@ -42,7 +42,9 @@ ExecStartPre={{ devture_systemd_docker_base_host_command_docker }} create \
       {{ arg }} \
       {% endfor %}
       {{ prometheus_alertmanager_container_image }} \
-      {{ prometheus_alertmanager_process_extra_arguments | join(' ') }}
+      {% for arg in prometheus_alertmanager_process_extra_arguments %}
+      {{ arg }} \
+      {% endfor %}
 
 {% for network in prometheus_alertmanager_container_additional_networks %}
 ExecStartPre={{ devture_systemd_docker_base_host_command_docker }} network connect {{ network }} {{ prometheus_alertmanager_identifier }}
