@@ -32,7 +32,6 @@
   with_items:
     - prometheus_alertmanager_uid
     - prometheus_alertmanager_gid
-    - prometheus_alertmanager_container_network
 
 # Alertmanager validates its configuration file at startup and exits when it
 # does not hold up, before it ever binds its web listener. With `Restart=always`
